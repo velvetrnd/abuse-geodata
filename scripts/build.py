@@ -105,7 +105,7 @@ def build_geodat(
             "action": "add",
             "args": {
                 "name": tag_name(name),
-                "srcFile": str(txt),
+                "uri": str(txt),
             },
         })
 
