@@ -1,0 +1,33 @@
+name: category-tor-exit
+type: ip
+description:
+  ru: "Exit-ноды сети Tor. Трафик с этих адресов может исходить от анонимных пользователей Tor."
+  en: "Tor network exit nodes. Traffic from these addresses may originate from anonymous Tor users."
+
+flags:
+  high_false_positive:
+    value: false
+    description:
+      ru: "Список официальный, предоставляется Tor Project – адреса верифицированы"
+      en: "Official list provided by Tor Project – addresses are verified"
+  high_volatility:
+    value: false
+    description:
+      ru: "Список нод обновляется регулярно, но изменения умеренные"
+      en: "Node list updates regularly but changes are moderate"
+  controversial:
+    value: true
+    description:
+      ru: "Tor используется как для вредоносной активности, так и для легитимной анонимизации. Часть пользователей VPN намеренно цепляет Tor поверх – блокировка может нарушить их приватность. Включайте осознанно."
+      en: "Tor is used both for malicious activity and legitimate anonymization. Some VPN users intentionally chain Tor – blocking may violate their privacy. Enable consciously."
+  large_dataset:
+    value: false
+    description:
+      ru: "Несколько тысяч адресов, производительность не затрагивается"
+      en: "Several thousand addresses, no performance impact"
+
+sources:
+  - name: torproject-exit-list
+    url: https://check.torproject.org/torbulkexitlist
+    format: text
+    comment_char: "#"

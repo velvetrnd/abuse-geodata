@@ -1,0 +1,34 @@
+name: category-cryptojacking
+type: mixed
+description:
+  ru: "IP-адреса и домены майнинг-пулов, используемых для несанкционированного майнинга криптовалюты (cryptojacking)"
+  en: "IPs and domains of mining pools used for unauthorized cryptocurrency mining (cryptojacking)"
+
+flags:
+  high_false_positive:
+    value: false
+    description:
+      ru: "Майнинг-пулы однозначно идентифицируются. Легитимный майнинг пользователи осуществляют осознанно, не через VPN."
+      en: "Mining pools are unambiguously identifiable. Legitimate mining users do it consciously, not through VPN."
+  high_volatility:
+    value: false
+    description:
+      ru: "Крупные пулы стабильны, список меняется редко"
+      en: "Major pools are stable, list changes rarely"
+  controversial:
+    value: false
+    description:
+      ru: "Нагрузка от майнинга через VPN вредит другим пользователям и провайдеру"
+      en: "Mining load through VPN harms other users and the provider"
+  large_dataset:
+    value: false
+    description:
+      ru: "Небольшой список"
+      en: "Small list"
+
+sources:
+  - name: nicehash-blocklist-domains
+    url: https://raw.githubusercontent.com/nicehash/NiceHashQuickMiner/master/blocking/blocked_hosts.txt
+    format: text
+    type_override: domain
+    comment_char: "#"

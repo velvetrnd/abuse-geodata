@@ -1,0 +1,33 @@
+name: category-sinkhole
+type: ip
+description:
+  ru: "IP-адреса известных sinkhole-серверов, управляемых исследователями безопасности и CERT-организациями"
+  en: "IP addresses of known sinkhole servers operated by security researchers and CERT organizations"
+
+flags:
+  high_false_positive:
+    value: false
+    description:
+      ru: "Адреса принадлежат известным организациям и верифицированы вручную"
+      en: "Addresses belong to known organizations and are manually verified"
+  high_volatility:
+    value: false
+    description:
+      ru: "Список меняется редко – sinkhole-инфраструктура стабильна"
+      en: "List changes rarely – sinkhole infrastructure is stable"
+  controversial:
+    value: false
+    description:
+      ru: "Трафик к sinkhole однозначно является malware C2 – легитимных причин нет"
+      en: "Traffic to sinkholes is unambiguously malware C2 – no legitimate reasons exist"
+  large_dataset:
+    value: false
+    description:
+      ru: "Небольшой список, не влияет на производительность"
+      en: "Small list, no performance impact"
+
+sources:
+  - name: brakmic-sinkholes
+    url: https://raw.githubusercontent.com/brakmic/Sinkholes/master/Sinkholes_List.csv
+    format: csv
+    column: "IP Range"

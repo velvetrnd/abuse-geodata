@@ -1,0 +1,33 @@
+name: category-brute-force
+type: ip
+description:
+  ru: "IP-адреса, замеченные в брутфорс-атаках на SSH, RDP, FTP и другие сервисы"
+  en: "IP addresses observed conducting brute-force attacks on SSH, RDP, FTP and other services"
+
+flags:
+  high_false_positive:
+    value: false
+    description:
+      ru: "Адреса добавляются только после подтверждённых атак по данным honeypot-сети"
+      en: "Addresses are added only after confirmed attacks from honeypot network data"
+  high_volatility:
+    value: true
+    description:
+      ru: "IP-адреса часто переназначаются провайдерами – адрес атакующего сегодня может принадлежать легитимному пользователю через несколько дней. Рекомендуется использовать вместе с TTL-политикой."
+      en: "IPs are frequently reassigned by providers – an attacker's address today may belong to a legitimate user in days. Recommended to use with TTL policy."
+  controversial:
+    value: false
+    description:
+      ru: "Брутфорс-трафик однозначно нежелателен"
+      en: "Brute-force traffic is unambiguously unwanted"
+  large_dataset:
+    value: false
+    description:
+      ru: "Умеренный объём"
+      en: "Moderate size"
+
+sources:
+  - name: blocklist-de-all
+    url: https://lists.blocklist.de/lists/all.txt
+    format: text
+    comment_char: "#"
