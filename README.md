@@ -71,7 +71,7 @@ Place `geoip.dat` and `geosite.dat` in your Xray assets directory (default: `/us
         "tag": "malware-c2-ip",
         "type": "remote",
         "format": "binary",
-        "url": "https://github.com/your-org/abuse-geodata/releases/latest/download/category-malware-c2-ip.srs",
+        "url": "https://github.com/velvetrnd/abuse-geodata/releases/latest/download/category-malware-c2-ip.srs",
         "update_interval": "24h"
       }
     ],
@@ -94,7 +94,7 @@ Place `geoip.dat` and `geosite.dat` in your Xray assets directory (default: `/us
 
 ```bash
 ipset create abuse-block hash:net
-curl -sL https://github.com/your-org/abuse-geodata/releases/latest/download/category-bundle-strict-ip.txt \
+curl -sL https://github.com/velvetrnd/abuse-geodata/releases/latest/download/category-bundle-strict-ip.txt \
   | grep -v '^#' | xargs -I{} ipset add abuse-block {}
 
 iptables -I FORWARD -m set --match-set abuse-block dst -j DROP
@@ -144,6 +144,10 @@ iptables -I FORWARD -m set --match-set abuse-block dst -j DROP
 ### Update schedule
 
 Rebuilt automatically every day at **03:00 UTC** via GitHub Actions.
+
+### Telegram bot
+
+Subscribe to [@abuse_geodata_bot](https://t.me/abuse_geodata_bot) to get notifications about new releases with per-category stats and delta from the previous build.
 
 ---
 
@@ -214,7 +218,7 @@ Rebuilt automatically every day at **03:00 UTC** via GitHub Actions.
         "tag": "malware-c2-ip",
         "type": "remote",
         "format": "binary",
-        "url": "https://github.com/your-org/abuse-geodata/releases/latest/download/category-malware-c2-ip.srs",
+        "url": "https://github.com/velvetrnd/abuse-geodata/releases/latest/download/category-malware-c2-ip.srs",
         "update_interval": "24h"
       }
     ],
@@ -232,7 +236,7 @@ Rebuilt automatically every day at **03:00 UTC** via GitHub Actions.
 
 ```bash
 ipset create abuse-block hash:net
-curl -sL https://github.com/your-org/abuse-geodata/releases/latest/download/category-bundle-strict-ip.txt \
+curl -sL https://github.com/velvetrnd/abuse-geodata/releases/latest/download/category-bundle-strict-ip.txt \
   | grep -v '^#' | xargs -I{} ipset add abuse-block {}
 
 iptables -I FORWARD -m set --match-set abuse-block dst -j DROP
@@ -282,6 +286,10 @@ iptables -I FORWARD -m set --match-set abuse-block dst -j DROP
 ### Расписание обновлений
 
 Пересборка автоматически каждый день в **03:00 UTC** через GitHub Actions.
+
+### Telegram-бот
+
+Подпишись на [@abuse_geodata_bot](https://t.me/abuse_geodata_bot), чтобы получать уведомления о новых релизах со статистикой по категориям и дельтой от предыдущей сборки.
 
 ---
 
