@@ -76,20 +76,23 @@ jobs:
         env:
           BOT_API_URL: ${{ vars.BOT_API_URL }}
           BOT_API_SECRET: ${{ secrets.BOT_API_SECRET }}
+          TEST_OUTPUT: ${{ steps.test.outputs.output }}
         run: |
-          PASSED="true"
-          if [ "${{ job.status }}" != "success" ]; then
-            PASSED="false"
+          if [ "${{ job.status }}" = "success" ]; then
+            export PASSED="true"
+          else
+            export PASSED="false"
           fi
-          PAYLOAD=$(python3 -c "
-          import json, sys
-          print(json.dumps({
-              'type': 'test_result',
-              'passed': sys.argv[1] == 'true',
-              'output': sys.argv[2]
-          }))
-          " "$PASSED" "${{ steps.test.outputs.output }}")
+          python3 -c "
+          import json, os
+          with open('/tmp/test-payload.json', 'w') as f:
+              json.dump({
+                  'type': 'test_result',
+                  'passed': os.environ.get('PASSED') == 'true',
+                  'output': os.environ.get('TEST_OUTPUT', '')
+              }, f)
+          "
           curl -sf -X POST "${BOT_API_URL}/api/notify" \
             -H "Authorization: Bearer ${BOT_API_SECRET}" \
             -H "Content-Type: application/json" \
-            -d "$PAYLOAD"
+            -d @/tmp/test-payload.json
