@@ -33,7 +33,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p output/srs output/txt
-          gh release download --repo ${{ github.repository }} --clobber
+          gh release download --repo ${{ github.repository }} --pattern '*' --clobber
           mv *.dat *.db output/ 2>/dev/null || true
           mv *.srs output/srs/ 2>/dev/null || true
           mv *.txt output/txt/ 2>/dev/null || true
