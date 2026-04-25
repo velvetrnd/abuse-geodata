@@ -134,28 +134,66 @@ jobs:
         id: tag
         run: echo "tag=$(date -u +%Y%m%d%H%M)" >> "$GITHUB_OUTPUT"
 
+      - name: Generate release body
+        id: body
+        run: |
+          BODY=$(python3 -c "
+          import pathlib
+
+          cats = {}
+          for f in sorted(pathlib.Path('data').glob('category-*.txt')):
+              name = f.stem
+              count = sum(1 for line in f.read_text().splitlines() if line.strip())
+              base = name.rsplit('-', 1)[0]
+              suffix = name.rsplit('-', 1)[1]
+              if base not in cats:
+                  cats[base] = {'ip': 0, 'domain': 0}
+              cats[base][suffix] = count
+
+          lines = []
+          lines.append('Automated build from upstream threat intelligence sources.')
+          lines.append('')
+          lines.append('## Stats')
+          lines.append('')
+          lines.append('| Category | IPs | Domains |')
+          lines.append('|----------|-----|---------|')
+          total_ip = 0
+          total_domain = 0
+          for name, counts in sorted(cats.items()):
+              label = name.replace('category-', '')
+              ip = counts['ip']
+              domain = counts['domain']
+              total_ip += ip
+              total_domain += domain
+              ip_s = f'{ip:,}' if ip else '—'
+              domain_s = f'{domain:,}' if domain else '—'
+              lines.append(f'| {label} | {ip_s} | {domain_s} |')
+          lines.append(f'| **Total** | **{total_ip:,}** | **{total_domain:,}** |')
+          lines.append('')
+          lines.append('## Files')
+          lines.append('')
+          lines.append('| File | Description |')
+          lines.append('|------|-------------|')
+          lines.append('| \`geoip.dat\` | Xray/V2Ray geoip database |')
+          lines.append('| \`geosite.dat\` | Xray/V2Ray geosite database |')
+          lines.append('| \`geoip.db\` | sing-box MaxMind MMDB |')
+          lines.append('| \`srs/category-*.srs\` | sing-box rule-sets per category |')
+          lines.append('| \`txt/category-*.txt\` | Plain IP/domain lists |')
+
+          print('\n'.join(lines))
+          ")
+          {
+            echo "body<<EOFBODY"
+            echo "$BODY"
+            echo "EOFBODY"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: "Data ${{ steps.tag.outputs.tag }}"
-          body: |
-            Automated build from upstream threat intelligence sources.
-
-            ## Files
-
-            | File | Description |
-            |------|-------------|
-            | `geoip.dat` | Xray/V2Ray geoip database |
-            | `geosite.dat` | Xray/V2Ray geosite database |
-            | `geoip.db` | sing-box MaxMind MMDB |
-            | `srs/category-*.srs` | sing-box rule-sets per category |
-            | `srs/category-bundle-strict-*.srs` | Aggregated – only stable categories |
-            | `srs/category-bundle-full-*.srs` | Aggregated – all categories including noisy |
-            | `txt/category-*.txt` | Plain IP/domain lists (ipset, hosts, etc.) |
-
-            ## Sources updated
-            ${{ steps.tag.outputs.tag }}
+          body: ${{ steps.body.outputs.body }}
           files: |
             output/geoip.dat
             output/geosite.dat
