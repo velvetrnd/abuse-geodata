@@ -104,16 +104,16 @@ iptables -I FORWARD -m set --match-set abuse-block dst -j DROP
 | Category | Type | Description | Flags |
 |:---------|:-----|:------------|:------|
 | `category-sinkhole` | IP | Known sinkhole IPs operated by security researchers | – |
-| `category-sinkhole-domain` | Domain | Sinkhole domains seized by CERT.PL | ⚠️ large |
+| `category-sinkhole-domain` | Domain | Sinkhole domains seized by CERT.PL | large |
 | `category-malware-c2` | IP + Domain | Malware C2 servers (botnets, ransomware, trojans) | – |
-| `category-phishing` | Domain | Phishing domains | ⚡ volatile |
+| `category-phishing` | Domain | Phishing domains | volatile |
 | `category-spam` | IP | Spamhaus DROP/EDROP – hijacked IP blocks | – |
-| `category-tor-exit` | IP | Tor exit nodes | ⚠️ controversial |
-| `category-brute-force` | IP | IPs conducting brute-force attacks | ⚡ volatile |
-| `category-torrent` | Domain | Torrent sites and piracy resources (legal excluded) | ⚠️ controversial, large |
+| `category-tor-exit` | IP | Tor exit nodes | controversial |
+| `category-brute-force` | IP | IPs conducting brute-force attacks | volatile |
+| `category-torrent` | Domain | Torrent sites and piracy resources (legal excluded) | controversial, large |
 | `category-torrent-legal` | Domain | Legitimate torrent services (Linux distros, archives, FOSS) | – |
-| `category-torrent-announce` | IP + Domain | BitTorrent tracker announce servers | ⚠️ controversial |
-| `category-dga` | Domain | DGA-generated malware domains | ⚠️ high FP, large |
+| `category-torrent-announce` | IP + Domain | BitTorrent tracker announce servers | controversial |
+| `category-dga` | Domain | DGA-generated malware domains | high FP, large |
 
 #### Flag legend
 
@@ -274,16 +274,16 @@ iptables -I FORWARD -m set --match-set abuse-block dst -j DROP
 | Категория | Тип | Описание | Флаги |
 |:----------|:----|:---------|:------|
 | `category-sinkhole` | IP | Известные sinkhole IP исследователей безопасности | – |
-| `category-sinkhole-domain` | Domain | Sinkhole-домены, перехваченные CERT.PL | ⚠️ большой |
+| `category-sinkhole-domain` | Domain | Sinkhole-домены, перехваченные CERT.PL | большой |
 | `category-malware-c2` | IP + Domain | C2-серверы малвари (ботнеты, ransomware, трояны) | – |
-| `category-phishing` | Domain | Фишинговые домены | ⚡ волатильный |
+| `category-phishing` | Domain | Фишинговые домены | волатильный |
 | `category-spam` | IP | Spamhaus DROP/EDROP – захваченные спамерами блоки | – |
-| `category-tor-exit` | IP | Exit-ноды сети Tor | ⚠️ спорный |
-| `category-brute-force` | IP | IP-адреса, ведущие брутфорс-атаки | ⚡ волатильный |
-| `category-torrent` | Domain | Торрент-сайты и пиратские ресурсы (без легальных) | ⚠️ спорный, большой |
+| `category-tor-exit` | IP | Exit-ноды сети Tor | спорный |
+| `category-brute-force` | IP | IP-адреса, ведущие брутфорс-атаки | волатильный |
+| `category-torrent` | Domain | Торрент-сайты и пиратские ресурсы (без легальных) | спорный, большой |
 | `category-torrent-legal` | Domain | Легитимные торрент-сервисы (Linux-дистрибутивы, архивы, FOSS) | – |
-| `category-torrent-announce` | IP + Domain | Announce-серверы BitTorrent-трекеров | ⚠️ спорный |
-| `category-dga` | Domain | DGA-домены малвари | ⚠️ высокий FP, большой |
+| `category-torrent-announce` | IP + Domain | Announce-серверы BitTorrent-трекеров | спорный |
+| `category-dga` | Domain | DGA-домены малвари | высокий FP, большой |
 
 #### Описание флагов
 
@@ -444,16 +444,16 @@ iptables -I FORWARD -m set --match-set abuse-block dst -j DROP
 | 类别 | 类型 | 说明 | 标记 |
 |:-----|:-----|:-----|:-----|
 | `category-sinkhole` | IP | 安全研究人员运营的已知 sinkhole 服务器 | – |
-| `category-sinkhole-domain` | Domain | CERT.PL 接管的 sinkhole 域名 | ⚠️ 大型 |
+| `category-sinkhole-domain` | Domain | CERT.PL 接管的 sinkhole 域名 | 大型 |
 | `category-malware-c2` | IP + Domain | 恶意软件 C2 服务器（僵尸网络、勒索软件、木马） | – |
-| `category-phishing` | Domain | 钓鱼域名 | ⚡ 高波动 |
+| `category-phishing` | Domain | 钓鱼域名 | 高波动 |
 | `category-spam` | IP | Spamhaus DROP/EDROP — 被劫持的 IP 段 | – |
-| `category-tor-exit` | IP | Tor 出口节点 | ⚠️ 争议性 |
-| `category-brute-force` | IP | 暴力破解攻击源 IP | ⚡ 高波动 |
-| `category-torrent` | Domain | 盗版种子站点（已排除合法站点） | ⚠️ 争议性、大型 |
+| `category-tor-exit` | IP | Tor 出口节点 | 争议性 |
+| `category-brute-force` | IP | 暴力破解攻击源 IP | 高波动 |
+| `category-torrent` | Domain | 盗版种子站点（已排除合法站点） | 争议性、大型 |
 | `category-torrent-legal` | Domain | 合法种子服务（Linux 发行版、归档站、FOSS） | – |
-| `category-torrent-announce` | IP + Domain | BitTorrent Tracker Announce 服务器 | ⚠️ 争议性 |
-| `category-dga` | Domain | 恶意软件 DGA 生成域名 | ⚠️ 高误报、大型 |
+| `category-torrent-announce` | IP + Domain | BitTorrent Tracker Announce 服务器 | 争议性 |
+| `category-dga` | Domain | 恶意软件 DGA 生成域名 | 高误报、大型 |
 
 #### 标记说明
 
