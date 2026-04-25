@@ -1,0 +1,193 @@
+name: Build and Release
+
+on:
+  schedule:
+    - cron: "0 3 * * *"   # every day at 03:00 UTC
+  push:
+    branches: [main]
+    paths:
+      - "sources/**"
+      - "scripts/**"
+      - ".github/workflows/build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Cache tools
+        uses: actions/cache@v4
+        with:
+          path: tools/
+          key: tools-${{ hashFiles('.github/workflows/build.yml') }}
+
+      - name: Cache previous data
+        uses: actions/cache@v4
+        with:
+          path: data/
+          key: data-${{ github.run_id }}
+          restore-keys: data-
+
+      - name: Download geoip builder (Loyalsoldier/geoip)
+        run: |
+          if [ -f tools/geoip ]; then echo "cached"; exit 0; fi
+          mkdir -p tools
+          GEOIP_VERSION=$(curl -sL \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/Loyalsoldier/geoip/releases/latest \
+            | jq -r '.tag_name')
+          echo "geoip version: ${GEOIP_VERSION}"
+          curl -sL "https://github.com/Loyalsoldier/geoip/releases/download/${GEOIP_VERSION}/linux-amd64-geoip.zip" \
+            -o tools/geoip.zip
+          unzip -q tools/geoip.zip -d tools/
+          GEOIP_BIN=$(find tools/ -maxdepth 1 -type f -name "*geoip*" ! -name "*.zip" | head -1)
+          if [ -z "$GEOIP_BIN" ]; then
+            echo "ERROR: geoip binary not found after unzip" >&2
+            ls -la tools/
+            exit 1
+          fi
+          mv "$GEOIP_BIN" tools/geoip
+          chmod +x tools/geoip
+          tools/geoip --version || true
+
+      - name: Download sing-box
+        run: |
+          if [ -f tools/sing-box ]; then echo "cached"; exit 0; fi
+          mkdir -p tools
+          SINGBOX_VERSION=$(curl -sL \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/SagerNet/sing-box/releases/latest \
+            | jq -r '.tag_name')
+          SINGBOX_VERSION_CLEAN="${SINGBOX_VERSION#v}"
+          echo "sing-box version: ${SINGBOX_VERSION}"
+          curl -sL "https://github.com/SagerNet/sing-box/releases/download/${SINGBOX_VERSION}/sing-box-${SINGBOX_VERSION_CLEAN}-linux-amd64.tar.gz" \
+            -o tools/sing-box.tar.gz
+          tar -xzf tools/sing-box.tar.gz -C tools/ --strip-components=1 \
+            --wildcards "*/sing-box"
+          chmod +x tools/sing-box
+          tools/sing-box version
+
+      - name: Fetch sources
+        run: python scripts/fetch.py
+
+      - name: Notify bot — fetch warnings
+        if: ${{ vars.BOT_API_URL != '' }}
+        continue-on-error: true
+        env:
+          BOT_API_URL: ${{ vars.BOT_API_URL }}
+          BOT_API_SECRET: ${{ secrets.BOT_API_SECRET }}
+        run: |
+          if [ ! -f data/.fetch-status.json ]; then exit 0; fi
+          WARNINGS=$(python3 -c "
+          import json
+          status = json.load(open('data/.fetch-status.json'))
+          stale = [f'{k}: {v} consecutive empty fetches' for k, v in status.items() if v >= 3]
+          if stale:
+              print(json.dumps({'type':'warning','warnings':stale,'fetch_status':status}))
+          ")
+          if [ -n "$WARNINGS" ]; then
+            curl -sf -X POST "${BOT_API_URL}/api/notify" \
+              -H "Authorization: Bearer ${BOT_API_SECRET}" \
+              -H "Content-Type: application/json" \
+              -d "$WARNINGS"
+          fi
+
+      - name: Build outputs
+        run: python scripts/build.py
+
+      - name: Verify outputs
+        run: |
+          echo "=== Output files ==="
+          find output/ -type f | sort | while read f; do
+            size=$(wc -c < "$f")
+            echo "  $f ($size bytes)"
+          done
+          # fail if critical files are missing
+          for f in output/geoip.dat output/geosite.dat; do
+            if [ ! -f "$f" ]; then
+              echo "ERROR: $f is missing" >&2
+              exit 1
+            fi
+          done
+
+      - name: Generate release tag
+        id: tag
+        run: echo "tag=$(date -u +%Y%m%d%H%M)" >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "Data ${{ steps.tag.outputs.tag }}"
+          body: |
+            Automated build from upstream threat intelligence sources.
+
+            ## Files
+
+            | File | Description |
+            |------|-------------|
+            | `geoip.dat` | Xray/V2Ray geoip database |
+            | `geosite.dat` | Xray/V2Ray geosite database |
+            | `geoip.db` | sing-box MaxMind MMDB |
+            | `srs/category-*.srs` | sing-box rule-sets per category |
+            | `srs/category-bundle-strict-*.srs` | Aggregated – only stable categories |
+            | `srs/category-bundle-full-*.srs` | Aggregated – all categories including noisy |
+            | `txt/category-*.txt` | Plain IP/domain lists (ipset, hosts, etc.) |
+
+            ## Sources updated
+            ${{ steps.tag.outputs.tag }}
+          files: |
+            output/geoip.dat
+            output/geosite.dat
+            output/geoip.db
+            output/srs/*.srs
+            output/txt/*.txt
+          make_latest: true
+
+      - name: Notify bot — new release
+        if: ${{ vars.BOT_API_URL != '' }}
+        continue-on-error: true
+        env:
+          BOT_API_URL: ${{ vars.BOT_API_URL }}
+          BOT_API_SECRET: ${{ secrets.BOT_API_SECRET }}
+        run: |
+          REPO_URL="${{ github.server_url }}/${{ github.repository }}"
+          TAG="${{ steps.tag.outputs.tag }}"
+          STATS=$(python3 -c "
+          import json, pathlib
+          stats = {}
+          for f in sorted(pathlib.Path('data').glob('category-*.txt')):
+              count = sum(1 for line in f.read_text().splitlines() if line.strip())
+              stats[f.stem] = count
+          print(json.dumps(stats))
+          ")
+          PAYLOAD=$(python3 -c "
+          import json, sys
+          stats = json.loads(sys.argv[1])
+          print(json.dumps({
+              'type': 'release',
+              'tag': sys.argv[2],
+              'url': f'{sys.argv[3]}/releases/tag/{sys.argv[2]}',
+              'stats': stats
+          }))
+          " "$STATS" "$TAG" "$REPO_URL")
+          curl -sf -X POST "${BOT_API_URL}/api/notify" \
+            -H "Authorization: Bearer ${BOT_API_SECRET}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"

@@ -1,0 +1,34 @@
+name: category-spam
+type: ip
+description:
+  ru: "IP-диапазоны и адреса источников спама. Основан на Spamhaus DROP/EDROP – наиболее авторитетных публичных антиспам-фидах."
+  en: "IP ranges and addresses of spam sources. Based on Spamhaus DROP/EDROP – the most authoritative public anti-spam feeds."
+
+flags:
+  high_false_positive:
+    value: false
+    description:
+      ru: "Spamhaus DROP/EDROP содержит только целые блоки, намеренно захваченные спамерами – риск ложных срабатываний минимален"
+      en: "Spamhaus DROP/EDROP contains only entire blocks deliberately hijacked by spammers – false positive risk is minimal"
+  high_volatility:
+    value: false
+    description:
+      ru: "Блоки добавляются и удаляются взвешенно, список стабилен"
+      en: "Blocks are added and removed carefully, list is stable"
+  controversial:
+    value: false
+    description:
+      ru: "Трафик из захваченных спамерами блоков нежелателен"
+      en: "Traffic from spam-hijacked blocks is clearly unwanted"
+  large_dataset:
+    value: false
+    description:
+      ru: "DROP/EDROP небольшие по объёму"
+      en: "DROP/EDROP are small in size"
+
+sources:
+  - name: spamhaus-drop
+    url: https://www.spamhaus.org/drop/drop.txt
+    format: text
+    comment_char: ";"
+

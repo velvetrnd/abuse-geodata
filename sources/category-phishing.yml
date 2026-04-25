@@ -1,0 +1,40 @@
+name: category-phishing
+type: domain
+description:
+  ru: "Фишинговые домены – сайты, имитирующие легитимные сервисы для кражи учётных данных"
+  en: "Phishing domains – sites impersonating legitimate services to steal credentials"
+
+flags:
+  high_false_positive:
+    value: false
+    description:
+      ru: "Домены проверяются вручную командами OpenPhish и PhishTank перед добавлением"
+      en: "Domains are manually verified by OpenPhish and PhishTank teams before inclusion"
+  high_volatility:
+    value: true
+    description:
+      ru: "Фишинговые домены живут от нескольких часов до нескольких дней, список обновляется очень часто"
+      en: "Phishing domains live from hours to days, list updates very frequently"
+  controversial:
+    value: false
+    description:
+      ru: "Фишинговые домены однозначно вредоносны"
+      en: "Phishing domains are unambiguously malicious"
+  large_dataset:
+    value: false
+    description:
+      ru: "Умеренный объём"
+      en: "Moderate size"
+
+sources:
+  - name: openphish
+    url: https://openphish.com/feed.txt
+    format: text
+    extract: domain
+    comment_char: "#"
+
+  - name: phishtank
+    url: http://data.phishtank.com/data/online-valid.csv
+    format: csv
+    column: url
+    extract: domain
