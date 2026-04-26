@@ -60,6 +60,63 @@ All files are published as [GitHub Releases](../../releases/latest).
 
 Place `abuse-geoip.dat` and `abuse-geosite.dat` in your Xray assets directory (default: `/usr/local/share/xray/`).
 
+#### Remnawave/Remnanode (Docker)
+
+1. Create the assets directory and download the files:
+
+```bash
+mkdir -p /opt/remnanode/xray/share
+
+curl -sLo /opt/remnanode/xray/share/abuse-geoip.dat \
+  https://github.com/velvetrnd/abuse-geodata/releases/latest/download/abuse-geoip.dat
+
+curl -sLo /opt/remnanode/xray/share/abuse-geosite.dat \
+  https://github.com/velvetrnd/abuse-geodata/releases/latest/download/abuse-geosite.dat
+```
+
+2. Mount the files in `docker-compose.yml` (remnanode service):
+
+```yaml
+volumes:
+  - /opt/remnanode/xray/share/abuse-geoip.dat:/usr/local/bin/abuse-geoip.dat:ro
+  - /opt/remnanode/xray/share/abuse-geosite.dat:/usr/local/bin/abuse-geosite.dat:ro
+```
+
+3. Add routing rules in Xray config (via Remnawave panel or config file):
+
+```json
+{
+  "routing": {
+    "rules": [
+      {
+        "type": "field",
+        "ip": [
+          "ext:abuse-geoip.dat:category-sinkhole",
+          "ext:abuse-geoip.dat:category-malware-c2",
+          "ext:abuse-geoip.dat:category-spam",
+          "ext:abuse-geoip.dat:category-brute-force"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "ext:abuse-geosite.dat:category-malware-c2",
+          "ext:abuse-geosite.dat:category-phishing"
+        ],
+        "outboundTag": "block"
+      }
+    ]
+  }
+}
+```
+
+4. Auto-update (optional) — add to crontab:
+
+```bash
+0 4 * * * curl -sLo /opt/remnanode/xray/share/abuse-geoip.dat https://github.com/velvetrnd/abuse-geodata/releases/latest/download/abuse-geoip.dat && curl -sLo /opt/remnanode/xray/share/abuse-geosite.dat https://github.com/velvetrnd/abuse-geodata/releases/latest/download/abuse-geosite.dat && docker restart remnanode
+```
+
 #### sing-box
 
 ```json
@@ -113,6 +170,7 @@ iptables -I FORWARD -m set --match-set abuse-block dst -j DROP
 | `category-torrent` | Domain | Torrent sites and piracy resources (legal excluded) | controversial, large |
 | `category-torrent-legal` | Domain | Legitimate torrent services (Linux distros, archives, FOSS) | – |
 | `category-torrent-announce` | IP + Domain | BitTorrent tracker announce servers | controversial |
+| `category-threatview` | Domain | Threatview.io aggregated malware/phishing domains | large |
 | `category-dga` | Domain | DGA-generated malware domains | high FP, large |
 
 #### Flag legend
@@ -137,6 +195,11 @@ iptables -I FORWARD -m set --match-set abuse-block dst -j DROP
 | URLhaus (abuse.ch) | https://urlhaus.abuse.ch |
 | ThreatFox (abuse.ch) | https://threatfox.abuse.ch |
 | Emerging Threats | https://rules.emergingthreats.net |
+| C2IntelFeeds | https://github.com/drb-ra/C2IntelFeeds |
+| Threatview.io | https://threatview.io |
+| Disconnect.me | https://disconnect.me |
+| CyberHost Malware | https://cyberhost.uk |
+| ShadowWhisperer | https://github.com/ShadowWhisperer/BlockLists |
 | Spamhaus DROP/EDROP | https://www.spamhaus.org/drop/ |
 | Tor Project | https://check.torproject.org/torbulkexitlist |
 | blocklist.de | https://www.blocklist.de |
@@ -235,6 +298,63 @@ Subscribe to [@abuse_geodata_bot](https://t.me/abuse_geodata_bot) to get notific
 
 Положи `abuse-geoip.dat` и `abuse-geosite.dat` в директорию ресурсов Xray (по умолчанию `/usr/local/share/xray/`).
 
+#### Remnawave/Remnanode (Docker)
+
+1. Создай директорию и скачай файлы:
+
+```bash
+mkdir -p /opt/remnanode/xray/share
+
+curl -sLo /opt/remnanode/xray/share/abuse-geoip.dat \
+  https://github.com/velvetrnd/abuse-geodata/releases/latest/download/abuse-geoip.dat
+
+curl -sLo /opt/remnanode/xray/share/abuse-geosite.dat \
+  https://github.com/velvetrnd/abuse-geodata/releases/latest/download/abuse-geosite.dat
+```
+
+2. Примонтируй файлы в `docker-compose.yml` (сервис remnanode):
+
+```yaml
+volumes:
+  - /opt/remnanode/xray/share/abuse-geoip.dat:/usr/local/bin/abuse-geoip.dat:ro
+  - /opt/remnanode/xray/share/abuse-geosite.dat:/usr/local/bin/abuse-geosite.dat:ro
+```
+
+3. Добавь правила маршрутизации в конфиг Xray (через панель Remnawave или конфиг-файл):
+
+```json
+{
+  "routing": {
+    "rules": [
+      {
+        "type": "field",
+        "ip": [
+          "ext:abuse-geoip.dat:category-sinkhole",
+          "ext:abuse-geoip.dat:category-malware-c2",
+          "ext:abuse-geoip.dat:category-spam",
+          "ext:abuse-geoip.dat:category-brute-force"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "ext:abuse-geosite.dat:category-malware-c2",
+          "ext:abuse-geosite.dat:category-phishing"
+        ],
+        "outboundTag": "block"
+      }
+    ]
+  }
+}
+```
+
+4. Автообновление (опционально) — добавь в crontab:
+
+```bash
+0 4 * * * curl -sLo /opt/remnanode/xray/share/abuse-geoip.dat https://github.com/velvetrnd/abuse-geodata/releases/latest/download/abuse-geoip.dat && curl -sLo /opt/remnanode/xray/share/abuse-geosite.dat https://github.com/velvetrnd/abuse-geodata/releases/latest/download/abuse-geosite.dat && docker restart remnanode
+```
+
 #### sing-box
 
 ```json
@@ -307,6 +427,11 @@ iptables -I FORWARD -m set --match-set abuse-block dst -j DROP
 | URLhaus (abuse.ch) | https://urlhaus.abuse.ch |
 | ThreatFox (abuse.ch) | https://threatfox.abuse.ch |
 | Emerging Threats | https://rules.emergingthreats.net |
+| C2IntelFeeds | https://github.com/drb-ra/C2IntelFeeds |
+| Threatview.io | https://threatview.io |
+| Disconnect.me | https://disconnect.me |
+| CyberHost Malware | https://cyberhost.uk |
+| ShadowWhisperer | https://github.com/ShadowWhisperer/BlockLists |
 | Spamhaus DROP/EDROP | https://www.spamhaus.org/drop/ |
 | Tor Project | https://check.torproject.org/torbulkexitlist |
 | blocklist.de | https://www.blocklist.de |
@@ -405,6 +530,63 @@ python scripts/test.py /path/to/release-dir
 
 将 `abuse-geoip.dat` 和 `abuse-geosite.dat` 放入 Xray 资源目录（默认：`/usr/local/share/xray/`）。
 
+#### Remnawave/Remnanode (Docker)
+
+1. 创建资源目录并下载文件：
+
+```bash
+mkdir -p /opt/remnanode/xray/share
+
+curl -sLo /opt/remnanode/xray/share/abuse-geoip.dat \
+  https://github.com/velvetrnd/abuse-geodata/releases/latest/download/abuse-geoip.dat
+
+curl -sLo /opt/remnanode/xray/share/abuse-geosite.dat \
+  https://github.com/velvetrnd/abuse-geodata/releases/latest/download/abuse-geosite.dat
+```
+
+2. 在 `docker-compose.yml` 中挂载文件（remnanode 服务）：
+
+```yaml
+volumes:
+  - /opt/remnanode/xray/share/abuse-geoip.dat:/usr/local/bin/abuse-geoip.dat:ro
+  - /opt/remnanode/xray/share/abuse-geosite.dat:/usr/local/bin/abuse-geosite.dat:ro
+```
+
+3. 在 Xray 配置中添加路由规则（通过 Remnawave 面板或配置文件）：
+
+```json
+{
+  "routing": {
+    "rules": [
+      {
+        "type": "field",
+        "ip": [
+          "ext:abuse-geoip.dat:category-sinkhole",
+          "ext:abuse-geoip.dat:category-malware-c2",
+          "ext:abuse-geoip.dat:category-spam",
+          "ext:abuse-geoip.dat:category-brute-force"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "type": "field",
+        "domain": [
+          "ext:abuse-geosite.dat:category-malware-c2",
+          "ext:abuse-geosite.dat:category-phishing"
+        ],
+        "outboundTag": "block"
+      }
+    ]
+  }
+}
+```
+
+4. 自动更新（可选）— 添加到 crontab：
+
+```bash
+0 4 * * * curl -sLo /opt/remnanode/xray/share/abuse-geoip.dat https://github.com/velvetrnd/abuse-geodata/releases/latest/download/abuse-geoip.dat && curl -sLo /opt/remnanode/xray/share/abuse-geosite.dat https://github.com/velvetrnd/abuse-geodata/releases/latest/download/abuse-geosite.dat && docker restart remnanode
+```
+
 #### sing-box
 
 ```json
@@ -477,6 +659,11 @@ iptables -I FORWARD -m set --match-set abuse-block dst -j DROP
 | URLhaus (abuse.ch) | https://urlhaus.abuse.ch |
 | ThreatFox (abuse.ch) | https://threatfox.abuse.ch |
 | Emerging Threats | https://rules.emergingthreats.net |
+| C2IntelFeeds | https://github.com/drb-ra/C2IntelFeeds |
+| Threatview.io | https://threatview.io |
+| Disconnect.me | https://disconnect.me |
+| CyberHost Malware | https://cyberhost.uk |
+| ShadowWhisperer | https://github.com/ShadowWhisperer/BlockLists |
 | Spamhaus DROP/EDROP | https://www.spamhaus.org/drop/ |
 | Tor Project | https://check.torproject.org/torbulkexitlist |
 | blocklist.de | https://www.blocklist.de |

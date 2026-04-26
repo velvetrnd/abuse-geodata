@@ -1,0 +1,33 @@
+name: category-threatview
+type: domain
+description:
+  ru: "Threatview.io — агрегированный фид малварных и фишинговых доменов"
+  en: "Threatview.io aggregated malware/phishing domains"
+
+flags:
+  high_false_positive:
+    value: false
+    description:
+      ru: "Помечен как High Confidence, но без механизма очистки"
+      en: "Labeled High Confidence, but no pruning mechanism"
+  high_volatility:
+    value: false
+    description:
+      ru: "Обновляется ежедневно"
+      en: "Updated daily"
+  controversial:
+    value: false
+    description:
+      ru: "Малварные и фишинговые домены однозначно нежелательны"
+      en: "Malware and phishing domains are unambiguously unwanted"
+  large_dataset:
+    value: true
+    description:
+      ru: "~300K доменов, вероятно кумулятивный список"
+      en: "~300K domains, likely cumulative list"
+
+sources:
+  - name: threatview-hc-domain
+    url: https://threatview.io/Downloads/DOMAIN-High-Confidence-Feed.txt
+    format: text
+    type_override: domain
