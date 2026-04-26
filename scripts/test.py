@@ -72,7 +72,7 @@ def validate_txt_files() -> None:
     for txt in sorted(TXT_DIR.glob("abuse-category-*.txt")):
         name = txt.stem
         is_ip = name.endswith("-ip")
-        lines = [l.strip() for l in txt.read_text(encoding="utf-8").splitlines() if l.strip()]
+        lines = [line.strip() for line in txt.read_text(encoding="utf-8").splitlines() if line.strip()]
 
         if not lines:
             error(f"txt/{txt.name} is empty")
@@ -121,7 +121,7 @@ def validate_srs_files() -> None:
                 try:
                     data = json.loads(json_out.read_text())
                     rules = data.get("rules", [])
-                    total = sum(len(r.get("ip_cidr", r.get("domain", []))) for r in rules)
+                    total = sum(len(r.get("ip_cidr", [])) + len(r.get("domain", [])) for r in rules)
                     print(f"  OK srs/{srs.name}: {total} entries")
                 except (json.JSONDecodeError, KeyError):
                     warn(f"srs/{srs.name} decompiled but JSON is unexpected")
@@ -190,7 +190,7 @@ def validate_consistency() -> None:
         srs = SRS_DIR / f"{txt.stem}.srs"
         if not srs.exists():
             continue
-        txt_count = sum(1 for l in txt.read_text().splitlines() if l.strip())
+        txt_count = sum(1 for line in txt.read_text().splitlines() if line.strip())
         srs_size = srs.stat().st_size
         if txt_count > 100 and srs_size < 100:
             warn(f"{txt.stem}: {txt_count} txt entries but .srs only {srs_size} bytes")

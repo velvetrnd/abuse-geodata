@@ -20,13 +20,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
 
-      - name: Install Python deps
-        run: pip install -r requirements.txt
+      - name: Set up Python
+        run: uv python install 3.12
 
       - name: Download latest release
         env:
@@ -62,12 +60,13 @@ jobs:
       - name: Test release
         id: test
         run: |
-          OUTPUT=$(python scripts/test.py 2>&1) || true
+          EXIT_CODE=0
+          OUTPUT=$(uv run python scripts/test.py 2>&1) || EXIT_CODE=$?
           echo "$OUTPUT"
           echo "output<<EOFTEST" >> "$GITHUB_OUTPUT"
           echo "$OUTPUT" >> "$GITHUB_OUTPUT"
           echo "EOFTEST" >> "$GITHUB_OUTPUT"
-          # set exit code based on output
+          if [ $EXIT_CODE -ne 0 ]; then exit $EXIT_CODE; fi
           echo "$OUTPUT" | grep -q "^FAILED" && exit 1 || true
 
       - name: Notify bot

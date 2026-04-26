@@ -31,6 +31,15 @@ DOMAIN_RE = re.compile(r"^(?!-)[a-zA-Z0-9\-]{1,63}(?<!-)(\.[a-zA-Z0-9\-]{1,63})+
 
 FETCH_RETRIES = 3
 FETCH_RETRY_DELAY = 5
+MAX_RESPONSE_SIZE = 100 * 1024 * 1024  # 100 MB
+ALLOWED_SCHEMES = ("https://", "http://")
+
+
+def _safe_path(base: Path, untrusted: str) -> Path:
+    resolved = (base / untrusted).resolve()
+    if not resolved.is_relative_to(base.resolve()):
+        raise ValueError(f"path traversal blocked: {untrusted}")
+    return resolved
 
 
 def is_valid_ip(s: str) -> bool:
@@ -58,12 +67,26 @@ def extract_domain_from_url(raw: str) -> str | None:
 
 
 def fetch_url(url: str) -> str | None:
+    if not any(url.startswith(s) for s in ALLOWED_SCHEMES):
+        print(f"  ERROR: blocked URL scheme: {url}", file=sys.stderr)
+        return None
     req = urllib.request.Request(url, headers={"User-Agent": "abuse-geodata/1.0"})
     for attempt in range(1, FETCH_RETRIES + 1):
         try:
             print(f"  fetching {url} (attempt {attempt})")
             with urllib.request.urlopen(req, timeout=30) as resp:
-                return resp.read().decode("utf-8", errors="ignore")
+                chunks = []
+                total = 0
+                while True:
+                    chunk = resp.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    total += len(chunk)
+                    if total > MAX_RESPONSE_SIZE:
+                        print(f"  ERROR: response too large (>{MAX_RESPONSE_SIZE} bytes): {url}", file=sys.stderr)
+                        return None
+                    chunks.append(chunk)
+                return b"".join(chunks).decode("utf-8", errors="ignore")
         except Exception as e:
             print(f"  WARN attempt {attempt}/{FETCH_RETRIES}: {e}", file=sys.stderr)
             if attempt < FETCH_RETRIES:
@@ -203,7 +226,7 @@ def process_source(src: dict) -> tuple[list[str], list[str]]:
     if fmt == "local":
         url = src["url"]
         filename = url.removeprefix("local://")
-        content = load_local(SOURCES_DIR / filename)
+        content = load_local(_safe_path(SOURCES_DIR, filename))
     else:
         content = fetch_url(src["url"])
 
@@ -246,6 +269,9 @@ def process_category(path: Path) -> tuple[str, int]:
         return path.stem, 0
 
     name = cfg["name"]
+    if "/" in name or "\\" in name or ".." in name:
+        print(f"  ERROR: invalid category name: {name}", file=sys.stderr)
+        return path.stem, 0
     cat_type = cfg.get("type", "mixed")
     print(f"\n[{name}]")
 
@@ -262,15 +288,14 @@ def process_category(path: Path) -> tuple[str, int]:
 
     exclude_file = cfg.get("exclude_from")
     if exclude_file:
-        exc_path = SOURCES_DIR / exclude_file
+        exc_path = _safe_path(SOURCES_DIR, exclude_file)
         exc_content = load_local(exc_path)
         if exc_content:
             exc_entries = set(parse_text(exc_content))
-            removed_ips = all_ips & exc_entries
-            removed_domains = all_domains & exc_entries
+            before = len(all_ips) + len(all_domains)
             all_ips -= exc_entries
             all_domains -= exc_entries
-            excluded = len(removed_ips) + len(removed_domains)
+            excluded = before - len(all_ips) - len(all_domains)
             if excluded:
                 print(f"  excluded {excluded} entries via {exclude_file}")
 

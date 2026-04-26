@@ -20,18 +20,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+
       - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+        run: uv python install 3.12
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: "stable"
-
-      - name: Install Python deps
-        run: pip install -r requirements.txt
 
       - name: Cache tools
         uses: actions/cache@v4
@@ -82,7 +80,7 @@ jobs:
           tools/sing-box version
 
       - name: Fetch sources
-        run: python scripts/fetch.py
+        run: uv run python scripts/fetch.py
 
       - name: Notify bot — fetch warnings
         if: ${{ vars.BOT_API_URL != '' }}
@@ -92,7 +90,7 @@ jobs:
           BOT_API_SECRET: ${{ secrets.BOT_API_SECRET }}
         run: |
           if [ ! -f data/.fetch-status.json ]; then exit 0; fi
-          WARNINGS=$(python3 -c "
+          WARNINGS=$(uv run python3 -c "
           import json
           status = json.load(open('data/.fetch-status.json'))
           stale = [f'{k}: {v} consecutive empty fetches' for k, v in status.items() if v >= 3]
@@ -107,16 +105,18 @@ jobs:
           fi
 
       - name: Build outputs
-        run: python scripts/build.py
+        run: uv run python scripts/build.py
 
       - name: Test outputs
         id: test
         run: |
-          OUTPUT=$(python scripts/test.py 2>&1) || true
+          EXIT_CODE=0
+          OUTPUT=$(uv run python scripts/test.py 2>&1) || EXIT_CODE=$?
           echo "$OUTPUT"
           echo "output<<EOFTEST" >> "$GITHUB_OUTPUT"
           echo "$OUTPUT" >> "$GITHUB_OUTPUT"
           echo "EOFTEST" >> "$GITHUB_OUTPUT"
+          if [ $EXIT_CODE -ne 0 ]; then exit $EXIT_CODE; fi
           echo "$OUTPUT" | grep -q "^FAILED" && exit 1 || true
 
       - name: Notify bot — test results
@@ -132,7 +132,7 @@ jobs:
           else
             export PASSED="false"
           fi
-          python3 -c "
+          uv run python3 -c "
           import json, os
           with open('/tmp/test-payload.json', 'w') as f:
               json.dump({
@@ -153,7 +153,7 @@ jobs:
       - name: Generate release body
         id: body
         run: |
-          BODY=$(python3 -c "
+          BODY=$(uv run python3 -c "
           import pathlib, yaml
 
           descs = {}
@@ -235,7 +235,7 @@ jobs:
         run: |
           REPO_URL="${{ github.server_url }}/${{ github.repository }}"
           TAG="${{ steps.tag.outputs.tag }}"
-          STATS=$(python3 -c "
+          STATS=$(uv run python3 -c "
           import json, pathlib, yaml
           stats = {}
           for f in sorted(pathlib.Path('data').glob('category-*.txt')):
@@ -249,7 +249,7 @@ jobs:
               descs[cat_name] = d.get('en', '') if isinstance(d, dict) else str(d)
           print(json.dumps({'stats': stats, 'descriptions': descs}))
           ")
-          PAYLOAD=$(python3 -c "
+          PAYLOAD=$(uv run python3 -c "
           import json, sys
           data = json.loads(sys.argv[1])
           print(json.dumps({

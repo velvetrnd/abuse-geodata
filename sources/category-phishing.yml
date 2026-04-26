@@ -34,7 +34,7 @@ sources:
     comment_char: "#"
 
   - name: phishtank
-    url: http://data.phishtank.com/data/online-valid.csv
+    url: https://data.phishtank.com/data/online-valid.csv
     format: csv
     column: url
     extract: domain

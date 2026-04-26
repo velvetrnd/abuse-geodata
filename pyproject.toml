@@ -1,0 +1,8 @@
+[project]
+name = "abuse-geodata"
+version = "1.0.0"
+description = "Automated threat intelligence geodata for Xray, sing-box, and ipset"
+requires-python = ">=3.12"
+dependencies = [
+    "pyyaml>=6.0",
+]
