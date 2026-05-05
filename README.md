@@ -150,7 +150,7 @@ volumes:
 
 ```bash
 ipset create abuse-block hash:net
-curl -sL https://github.com/velvet-rnd/abuse-geodata/releases/latest/download/abuse-category-bundle-strict-ip.txt \
+curl -sL https://github.com/velvet-rnd/abuse-geodata/releases/latest/download/abuse-category-spam-ip.txt \
   | grep -v '^#' | xargs -I{} ipset add abuse-block {}
 
 iptables -I FORWARD -m set --match-set abuse-block dst -j DROP
@@ -383,7 +383,7 @@ volumes:
 
 ```bash
 ipset create abuse-block hash:net
-curl -sL https://github.com/velvet-rnd/abuse-geodata/releases/latest/download/abuse-category-bundle-strict-ip.txt \
+curl -sL https://github.com/velvet-rnd/abuse-geodata/releases/latest/download/abuse-category-spam-ip.txt \
   | grep -v '^#' | xargs -I{} ipset add abuse-block {}
 
 iptables -I FORWARD -m set --match-set abuse-block dst -j DROP
@@ -615,7 +615,7 @@ volumes:
 
 ```bash
 ipset create abuse-block hash:net
-curl -sL https://github.com/velvet-rnd/abuse-geodata/releases/latest/download/abuse-category-bundle-strict-ip.txt \
+curl -sL https://github.com/velvet-rnd/abuse-geodata/releases/latest/download/abuse-category-spam-ip.txt \
   | grep -v '^#' | xargs -I{} ipset add abuse-block {}
 
 iptables -I FORWARD -m set --match-set abuse-block dst -j DROP

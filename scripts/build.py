@@ -14,6 +14,7 @@ Outputs to output/:
   txt/category-*.txt  (copies of normalized lists)
 """
 
+import ipaddress
 import json
 import shutil
 import subprocess
@@ -22,6 +23,37 @@ import tempfile
 from pathlib import Path
 
 import yaml
+
+MMDB_ALIASED_NETWORKS = [
+    ipaddress.ip_network("2001::/32"),   # Teredo
+    ipaddress.ip_network("2002::/16"),   # 6to4
+    ipaddress.ip_network("fc00::/7"),    # ULA
+    ipaddress.ip_network("fe80::/10"),   # Link-local
+    ipaddress.ip_network("ff00::/8"),    # Multicast
+]
+
+
+def filter_aliased_ips(input_path: Path, output_path: Path) -> int:
+    """Filter out IPs in MMDB aliased networks. Returns count of removed entries."""
+    removed = 0
+    with open(input_path) as f:
+        lines = f.readlines()
+    with open(output_path, 'w') as f:
+        for line in lines:
+            stripped = line.strip()
+            if not stripped or stripped.startswith('#'):
+                f.write(line)
+                continue
+            try:
+                net = ipaddress.ip_network(stripped, strict=False)
+                if net.version == 6 and any(net.subnet_of(aliased) for aliased in MMDB_ALIASED_NETWORKS):
+                    removed += 1
+                    continue
+            except ValueError:
+                pass
+            f.write(line)
+    return removed
+
 
 ROOT = Path(__file__).parent.parent
 DATA_DIR = ROOT / "data"
@@ -91,45 +123,68 @@ def build_geodat(
     type_filter = ("ip", "mixed") if data_type == "ip" else ("domain", "mixed")
     suffix = f"-{data_type}.txt"
 
-    config: dict = {"input": [], "output": []}
+    # When building IP data, filter out MMDB aliased networks to prevent
+    # the MMDB writer from crashing on 6to4/Teredo/ULA addresses.
+    filter_ips = data_type == "ip"
+    tmp_filter_dir = None
 
-    for cat in cats:
-        if cat.get("type", "mixed") not in type_filter:
-            continue
-        name = cat["name"]
-        txt = DATA_DIR / f"{name}{suffix}"
-        if not txt.exists():
-            continue
-        config["input"].append({
-            "type": "text",
-            "action": "add",
-            "args": {
-                "name": tag_name(name),
-                "uri": str(txt),
-            },
+    if filter_ips:
+        tmp_filter_dir = tempfile.TemporaryDirectory()
+        filtered_dir = Path(tmp_filter_dir.name)
+
+    try:
+        config: dict = {"input": [], "output": []}
+
+        for cat in cats:
+            if cat.get("type", "mixed") not in type_filter:
+                continue
+            name = cat["name"]
+            txt = DATA_DIR / f"{name}{suffix}"
+            if not txt.exists():
+                continue
+
+            if filter_ips:
+                filtered_txt = filtered_dir / f"{name}{suffix}"
+                removed = filter_aliased_ips(txt, filtered_txt)
+                if removed:
+                    print(f"  filtered {removed} aliased IPs from {name}{suffix}")
+                uri = str(filtered_txt)
+            else:
+                uri = str(txt)
+
+            config["input"].append({
+                "type": "text",
+                "action": "add",
+                "args": {
+                    "name": tag_name(name),
+                    "uri": uri,
+                },
+            })
+
+        if not config["input"]:
+            print(f"  SKIP: no input files found for {label}", file=sys.stderr)
+            return
+
+        config["output"].append({
+            "type": output_type,
+            "action": "output",
+            "args": {"outputDir": str(OUTPUT_DIR), "outputName": f"abuse-{output_name}"},
         })
+        for extra in (extra_outputs or []):
+            config["output"].append(extra)
 
-    if not config["input"]:
-        print(f"  SKIP: no input files found for {label}", file=sys.stderr)
-        return
+        cfg_path = OUTPUT_DIR / f"abuse-{output_name}-config.json"
+        cfg_path.write_text(json.dumps(config, indent=2))
 
-    config["output"].append({
-        "type": output_type,
-        "action": "output",
-        "args": {"outputDir": str(OUTPUT_DIR), "outputName": f"abuse-{output_name}"},
-    })
-    for extra in (extra_outputs or []):
-        config["output"].append(extra)
-
-    cfg_path = OUTPUT_DIR / f"abuse-{output_name}-config.json"
-    cfg_path.write_text(json.dumps(config, indent=2))
-
-    result = run([str(geoip_bin), "convert", "--config", str(cfg_path)], cwd=ROOT, check=False)
-    if result.returncode != 0:
-        print(f"  ERROR: {result.stderr}", file=sys.stderr)
-    else:
-        out_files = [f"abuse-{output_name}"] + [e["args"]["outputName"] for e in (extra_outputs or [])]
-        print(f"  OK → {', '.join('output/' + f for f in out_files)}")
+        result = run([str(geoip_bin), "convert", "--config", str(cfg_path)], cwd=ROOT, check=False)
+        if result.returncode != 0:
+            print(f"  ERROR: {result.stderr}", file=sys.stderr)
+        else:
+            out_files = [f"abuse-{output_name}"] + [e["args"]["outputName"] for e in (extra_outputs or [])]
+            print(f"  OK → {', '.join('output/' + f for f in out_files)}")
+    finally:
+        if tmp_filter_dir is not None:
+            tmp_filter_dir.cleanup()
 
 
 def build_geosite(cats: list[dict]) -> None:
